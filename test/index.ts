@@ -15,7 +15,7 @@ describe('ResourceRouter', () => {
 
     const router = ResourceRouter.create({}, (routes) => {
       routes.controller = { show: 'no' };
-      routes.action('GET', 'home', root => {
+      routes.route('GET', 'home', root => {
         root.action = 'getHome';
       });
       routes.collection('users', users => {
@@ -34,16 +34,16 @@ describe('ResourceRouter', () => {
         });
       });
     });
-    const actions = router.actions;
-    // console.log('actions', actions);
-    expect(actions['home'].action.action).to.equal('getHome');
+    const routes = router.routes;
+    // console.log('routes', routes);
+    expect(routes['home'].route.action).to.equal('getHome');
 
-    expect(actions['users[user].show'].action.controller.show).to.equal('yes');
-    expect(actions['users[user].update'].action.controller.show).to.equal('no');
+    expect(routes['users[user].show'].route.controller.show).to.equal('yes');
+    expect(routes['users[user].update'].route.controller.show).to.equal('no');
 
-    expect(actions['users[user].show'].action.auth).to.equal(undefined);
-    expect(actions['users[user].update'].action.auth).to.equal('admin');
+    expect(routes['users[user].show'].route.auth).to.equal(undefined);
+    expect(routes['users[user].update'].route.auth).to.equal('admin');
 
-    expect(actions['users.create'].action.validate.payload).to.equal(userSchema);
+    expect(routes['users.create'].route.validate.payload).to.equal(userSchema);
   });
 });

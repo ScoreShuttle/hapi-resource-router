@@ -21,11 +21,11 @@ type ROOT = typeof ROOT;
 export type HttpMethod = 'GET'|'POST'|'PUT'|'PATCH'|'DELETE';
 type Path = string|ROOT;
 
-type ActionBuilder = (action: Action) => void;
+type RouteBuilder = (route: Route) => void;
 
 type ResourceChildren = Map<string,ResourceNode>;
 type ResourceBuilder<T extends Resource> = (resource: T) => void;
-type ResourceNodeVisitor = (name: string, path: string, action: Action) => boolean;
+type ResourceNodeVisitor = (name: string, path: string, route: Route) => boolean;
 
 class ResourceNode {
   options: ResourceOptions;
@@ -108,7 +108,7 @@ class ResourceNode {
   }
 }
 
-export class Action extends ResourceNode {
+export class Route extends ResourceNode {
   method: HttpMethod;
   action: string;
   description?: string;
@@ -189,39 +189,39 @@ export class Resource extends ResourceNode {
     return resource;
   }
 
-  create(actionBuilder?: ActionBuilder) {
-    return this.action('POST', 'create', actionBuilder);
+  create(routeBuilder?: RouteBuilder) {
+    return this.route('POST', 'create', routeBuilder);
   }
-  update(actionBuilder?: ActionBuilder) {
-    return this.action('PUT', 'update', actionBuilder);
+  update(routeBuilder?: RouteBuilder) {
+    return this.route('PUT', 'update', routeBuilder);
   }
-  patch(actionBuilder?: ActionBuilder) {
-    return this.action('PATCH', 'patch', actionBuilder);
+  patch(routeBuilder?: RouteBuilder) {
+    return this.route('PATCH', 'patch', routeBuilder);
   }
-  destroy(actionBuilder?: ActionBuilder) {
-    return this.action('DELETE', 'destroy', actionBuilder);
-  }
-  
-  action(method: HttpMethod, name: string, actionBuilder?: ActionBuilder): Action;
-  action(method: HttpMethod, name: string, path: string, actionBuilder?: ActionBuilder): Action;
-  action(method: HttpMethod, name: string, pathOrBuilder: any = ROOT, actionBuilder?: ActionBuilder): Action {
-    return this.addAction(method, name, pathOrBuilder, actionBuilder);
+  destroy(routeBuilder?: RouteBuilder) {
+    return this.route('DELETE', 'destroy', routeBuilder);
   }
   
-  addAction(method: HttpMethod, name: string, pathOrBuilder: any = ROOT, actionBuilder?: ActionBuilder): Action {
+  route(method: HttpMethod, name: string, routeBuilder?: RouteBuilder): Route;
+  route(method: HttpMethod, name: string, path: string, routeBuilder?: RouteBuilder): Route;
+  route(method: HttpMethod, name: string, pathOrBuilder: any = ROOT, routeBuilder?: RouteBuilder): Route {
+    return this.addRoute(method, name, pathOrBuilder, routeBuilder);
+  }
+  
+  addRoute(method: HttpMethod, name: string, pathOrBuilder: any = ROOT, routeBuilder?: RouteBuilder): Route {
     let path: Path;
     if (typeof pathOrBuilder === 'function') {
       path = ROOT;
-      actionBuilder = pathOrBuilder;
+      routeBuilder = pathOrBuilder;
     } else {
       path = pathOrBuilder;
     }
-    const action = new Action(method, name, path, this.options);
-    if (actionBuilder) {
-      actionBuilder(action);
+    const route = new Route(method, name, path, this.options);
+    if (routeBuilder) {
+      routeBuilder(route);
     }
-    this.addChild(action.name, action);
-    return action;
+    this.addChild(route.name, route);
+    return route;
   }
 
   addChild(name: string, node: ResourceNode) {
@@ -246,8 +246,8 @@ export class Resource extends ResourceNode {
 
 export class CollectionResource extends Resource {
   itemsResource?: CollectionItemResource;
-  index(actionBuilder?: ActionBuilder) {
-    return this.action('GET', 'index', actionBuilder);
+  index(routeBuilder?: RouteBuilder) {
+    return this.route('GET', 'index', routeBuilder);
   }
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
@@ -279,8 +279,8 @@ export class CollectionResource extends Resource {
 }
 
 export class ItemResource extends Resource {
-  show(actionBuilder?: ActionBuilder) {
-    return this.action('GET', 'show', actionBuilder);
+  show(routeBuilder?: RouteBuilder) {
+    return this.route('GET', 'show', routeBuilder);
   }
   group(name: string, builder: ResourceBuilder<ItemGroupResource>): ItemGroupResource {
     const resource = new ItemGroupResource(name, this.options);
@@ -315,8 +315,8 @@ export class GroupResource extends Resource {
 
 export class CollectionGroupResource extends GroupResource {
   itemsResource?: CollectionItemResource;
-  index(actionBuilder?: ActionBuilder) {
-    return this.action('GET', 'index', actionBuilder);
+  index(routeBuilder?: RouteBuilder) {
+    return this.route('GET', 'index', routeBuilder);
   }
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
@@ -342,8 +342,8 @@ export class CollectionGroupResource extends GroupResource {
 }
 
 export class ItemGroupResource extends GroupResource {
-  show(actionBuilder?: ActionBuilder) {
-    return this.action('GET', 'show', actionBuilder);
+  show(routeBuilder?: RouteBuilder) {
+    return this.route('GET', 'show', routeBuilder);
   }
 }
 
@@ -351,10 +351,10 @@ export interface ResourceRouterOptions {
   basePath?: string;
 }
 
-type ResourceRouterActions = {
+type ResourceRouterRoutes = {
   [name: string]: {
     path: string,
-    action: Action
+    route: Route
   }
 };
 
@@ -366,20 +366,20 @@ class ResourceRouter extends Resource {
     return map;
   }
   mapOptions: ResourceRouterOptions;
-  actions: ResourceRouterActions;
+  routes: ResourceRouterRoutes;
   constructor(mapOptions: ResourceRouterOptions) {
     super('ROUTER', ROOT);
     this.mapOptions = mapOptions;
-    this.actions = {};
+    this.routes = {};
   }
   build() {
-    this.visit('', this.mapOptions.basePath || '/', (canonicalName, path, action) => {
-      if (this.actions[canonicalName]) {
+    this.visit('', this.mapOptions.basePath || '/', (canonicalName, path, route) => {
+      if (this.routes[canonicalName]) {
         throw new Error(`Duplicate route name: ${canonicalName}`);
       }
-      this.actions[canonicalName] = {
+      this.routes[canonicalName] = {
         path,
-        action
+        route
       }
       return true;
     });
