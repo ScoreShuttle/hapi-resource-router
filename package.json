@@ -1,0 +1,40 @@
+{
+  "name": "hapi-resource-router",
+  "version": "0.0.0-development",
+  "description": "Resourceful Router for hapi",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "lab --sourcemaps --transform node_modules/lab-transform-typescript test/",
+    "semantic-release": "semantic-release"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LibreTechnologyInc/hapi-resource-router.git"
+  },
+  "keywords": [
+    "hapi",
+    "router"
+  ],
+  "author": "Chris Serino <themindoverall@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LibreTechnologyInc/hapi-resource-router/issues"
+  },
+  "homepage": "https://github.com/LibreTechnologyInc/hapi-resource-router#readme",
+  "dependencies": {
+    "hoek": "6.x.x",
+    "joi": "14.x.x"
+  },
+  "devDependencies": {
+    "@types/code": "^4.0.4",
+    "@types/hapi": "^17.6.3",
+    "code": "5.x.x",
+    "hapi": "17.x.x",
+    "lab": "17.x.x",
+    "lab-transform-typescript": "^3.0.1",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.1.6",
+    "semantic-release": "^15.10.8"
+  }
+}
