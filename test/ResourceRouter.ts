@@ -2,9 +2,10 @@ import { expect } from 'code';
 import Lab from 'lab';
 export const lab = Lab.script();
 const { describe, it } = lab;
+import Hapi from 'hapi';
 import Joi from 'joi';
 
-import ResourceRouter from '../lib';
+import ResourceRouter from '../lib/ResourceRouter';
 
 describe('ResourceRouter', () => {
   it('builds routes', () => {
@@ -13,8 +14,9 @@ describe('ResourceRouter', () => {
       last_name: Joi.string(),
     });
 
-    const router = ResourceRouter.create({}, (routes) => {
-      routes.controller = { show: 'no' };
+    const router = new ResourceRouter({});
+    router.add((routes) => {
+      routes.controller = { show: () => 'no' };
       routes.route('GET', 'home', root => {
         root.action = 'getHome';
       });
@@ -24,7 +26,7 @@ describe('ResourceRouter', () => {
         users.create();
         users.items('user', user => {
           user.show(show => {
-            show.controller = { show: 'yes' };
+            show.controller = { show: () => 'yes' };
           });
           user.group('admin', admin => {
             admin.auth = 'admin';
@@ -38,8 +40,8 @@ describe('ResourceRouter', () => {
     // console.log('routes', routes);
     expect(routes['home'].route.action).to.equal('getHome');
 
-    expect(routes['users[user].show'].route.controller.show).to.equal('yes');
-    expect(routes['users[user].update'].route.controller.show).to.equal('no');
+    expect(routes['users[user].show'].route.controller.show({}, {})).to.equal('yes');
+    expect(routes['users[user].update'].route.controller.show({}, {})).to.equal('no');
 
     expect(routes['users[user].show'].route.auth).to.equal(undefined);
     expect(routes['users[user].update'].route.auth).to.equal('admin');
