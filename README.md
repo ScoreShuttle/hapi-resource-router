@@ -51,7 +51,3 @@ server.resources().add(routes);
 ```
 
 ### Prerequisites
-
-users.pre.clear()
-users.pre.push('organization', preload('organizations', 'organization'))
-users.pre.push(checkOwnership('organization'))

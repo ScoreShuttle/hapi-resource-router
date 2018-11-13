@@ -93,7 +93,8 @@ const internals = {
           description: route.description,
           notes: route.notes,
           auth: route.auth,
-          tags: route.tags,
+          tags: route.tags.all(),
+          pre: route.pre.all(),
           payload: route.payload,
           validate: internals.buildValidate(route),
         },
@@ -114,7 +115,7 @@ const plugin: Hapi.Plugin<ResourceRouterOptions> = {
   },
   pkg: {
     name: 'resourceRouter',
-    version: package.version,
+    version: packageJson.version,
   },
 };
 
