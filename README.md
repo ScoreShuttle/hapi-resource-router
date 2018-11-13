@@ -29,13 +29,13 @@ export default (routes: ResourceRouter) => {
     users.auth = 'jwt:user';
     users.create(create => {
       create.validate.payload = UserController.schema.create;
-    }); // POST /users
-    users.index(); // GET /users
+    }); // POST /v1/users
+    users.index(); // GET /v1/users
     users.items('user', user => {
-      user.show(); // GET /users/{user}
-      user.update(); // PUT /users/{user}
-      user.destroy(); // DELETE /users/{user}
-      user.route('POST', 'refresh'); // POST /users/{user}/refresh
+      user.show(); // GET /v1/users/{user}
+      user.update(); // PUT /v1/users/{user}
+      user.destroy(); // DELETE /v1/users/{user}
+      user.route('POST', 'refresh'); // POST /v1/users/{user}/refresh
     });
   });
 };

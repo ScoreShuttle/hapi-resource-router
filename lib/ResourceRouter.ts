@@ -302,16 +302,16 @@ export class Resource extends ResourceNode {
   }
 
   create(routeBuilder?: RouteBuilder) {
-    return this.route('POST', 'create', routeBuilder);
+    return this.rootRoute('POST', 'create', routeBuilder);
   }
   update(routeBuilder?: RouteBuilder) {
-    return this.route('PUT', 'update', routeBuilder);
+    return this.rootRoute('PUT', 'update', routeBuilder);
   }
   patch(routeBuilder?: RouteBuilder) {
-    return this.route('PATCH', 'patch', routeBuilder);
+    return this.rootRoute('PATCH', 'patch', routeBuilder);
   }
   destroy(routeBuilder?: RouteBuilder) {
-    return this.route('DELETE', 'destroy', routeBuilder);
+    return this.rootRoute('DELETE', 'destroy', routeBuilder);
   }
 
   subscription(
@@ -401,7 +401,7 @@ export class Resource extends ResourceNode {
 export class CollectionResource extends Resource {
   itemsResource?: CollectionItemResource;
   index(routeBuilder?: RouteBuilder) {
-    return this.route('GET', 'index', routeBuilder);
+    return this.rootRoute('GET', 'index', routeBuilder);
   }
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
@@ -434,7 +434,7 @@ export class CollectionResource extends Resource {
 
 export class ItemResource extends Resource {
   show(routeBuilder?: RouteBuilder) {
-    return this.route('GET', 'show', routeBuilder);
+    return this.rootRoute('GET', 'show', routeBuilder);
   }
   group(name: string, builder: ResourceBuilder<ItemGroupResource>): ItemGroupResource {
     const resource = new ItemGroupResource(name, this);
@@ -467,7 +467,7 @@ export class GroupResource extends Resource {
 export class CollectionGroupResource extends GroupResource {
   itemsResource?: CollectionItemResource;
   index(routeBuilder?: RouteBuilder) {
-    return this.route('GET', 'index', routeBuilder);
+    return this.rootRoute('GET', 'index', routeBuilder);
   }
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
@@ -494,7 +494,7 @@ export class CollectionGroupResource extends GroupResource {
 
 export class ItemGroupResource extends GroupResource {
   show(routeBuilder?: RouteBuilder) {
-    return this.route('GET', 'show', routeBuilder);
+    return this.rootRoute('GET', 'show', routeBuilder);
   }
 }
 

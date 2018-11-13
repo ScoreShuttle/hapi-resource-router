@@ -2,11 +2,13 @@
   "name": "hapi-resource-router",
   "version": "0.0.0-development",
   "description": "Resourceful Router for hapi",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.js",
   "scripts": {
     "build": "tsc",
     "test": "lab --sourcemaps --transform node_modules/lab-transform-typescript test/",
     "lint": "tslint --project tsconfig.json -t verbose",
+    "prepublish": "npm run build",
     "semantic-release": "semantic-release"
   },
   "repository": {
