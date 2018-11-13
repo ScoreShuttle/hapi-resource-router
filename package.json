@@ -3,7 +3,7 @@
   "version": "0.0.0-development",
   "description": "Resourceful Router for hapi",
   "main": "dist/index.js",
-  "types": "dist/index.d.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "lab --sourcemaps --transform node_modules/lab-transform-typescript test/",
