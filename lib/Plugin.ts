@@ -1,6 +1,6 @@
 import Hapi from 'hapi';
 import ResourceRouter, { Route, SubscriptionRoute, ResourceRouterOptions } from './ResourceRouter';
-import Package from '../package.json';
+import packageJson from '../package.json';
 
 declare module 'hapi' {
   export interface Server {
@@ -10,7 +10,7 @@ declare module 'hapi' {
 
 const skipPayloadValidationMethods = new Set([
   'GET',
-  'OPTIONS'
+  'OPTIONS',
 ]);
 
 interface Subscribable {
@@ -35,7 +35,10 @@ const internals = {
     }
     return route.action;
   },
-  getSubscriptionHandler(route: SubscriptionRoute, name: 'filter'|'onSubscribe'|'onUnsubscribe'): Function|undefined {
+  getSubscriptionHandler(
+    route: SubscriptionRoute,
+    name: 'filter'|'onSubscribe'|'onUnsubscribe',
+  ): Function|undefined {
     const config = route.config[name];
     if (typeof config === 'string') {
       if (!(route.controller && route.controller[config])) {
@@ -50,8 +53,11 @@ const internals = {
       params: route.options.validateParams,
       query: route.options.validateQuery,
       response: route.options.validateResponse,
-      payload: this.skipPayloadValidation(route) ? undefined : route.options.validatePayload
-    }
+      payload:
+        this.skipPayloadValidation(route)
+          ? undefined
+          : route.options.validatePayload,
+    };
   },
   skipPayloadValidation(route: Route) {
     return skipPayloadValidationMethods.has(route.method);
@@ -72,8 +78,8 @@ const internals = {
               filter: internals.getSubscriptionHandler(route, 'filter'),
               onSubscribe: internals.getSubscriptionHandler(route, 'onSubscribe'),
               onUnsubscribe: internals.getSubscriptionHandler(route, 'onUnsubscribe'),
-              auth: route.config.auth
-            }
+              auth: route.config.auth,
+            },
           );
         }
         continue;
@@ -89,27 +95,27 @@ const internals = {
           auth: route.auth,
           tags: route.tags,
           payload: route.payload,
-          validate: internals.buildValidate(route)
-        }
+          validate: internals.buildValidate(route),
+        },
       });
     }
-  }
+  },
 };
 
-const Plugin: Hapi.Plugin<ResourceRouterOptions> = {
+const plugin: Hapi.Plugin<ResourceRouterOptions> = {
   register(server: Hapi.Server, options: ResourceRouterOptions) {
     const router = new ResourceRouter(options);
     server.decorate('server', 'resources', () => router);
 
     server.ext({
       type: 'onPostStart',
-      method: internals.onPostStart
+      method: internals.onPostStart,
     });
   },
   pkg: {
     name: 'resourceRouter',
-    version: Package.version
-  }
+    version: package.version,
+  },
 };
 
-export default Plugin;
+export default plugin;

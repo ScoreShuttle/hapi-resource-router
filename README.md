@@ -21,7 +21,9 @@ await server.register({
 
 Define a `routes.ts` module:
 ```
-routes => {
+import { ResourceRouter } from 'hapi-resource-router';
+
+export default (routes: ResourceRouter) => {
   routes.collection('users', users => {
     users.controller = UserController;
     users.auth = 'jwt:user';
@@ -33,11 +35,10 @@ routes => {
       user.show(); // GET /users/{user}
       user.update(); // PUT /users/{user}
       user.destroy(); // DELETE /users/{user}
-      user.post('refresh'); // POST /users/{user}/refresh
+      user.route('POST', 'refresh'); // POST /users/{user}/refresh
     });
   });
-}
-export default routes;
+};
 ```
 
 Then add your routes to the resource router:
@@ -48,3 +49,9 @@ import routes from './routes';
 
 server.resources().add(routes);
 ```
+
+### Prerequisites
+
+users.pre.clear()
+users.pre.push('organization', preload('organizations', 'organization'))
+users.pre.push(checkOwnership('organization'))

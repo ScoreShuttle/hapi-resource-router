@@ -1,16 +1,17 @@
 import Hapi from 'hapi';
-import { ObjectSchema, JoiObject } from "joi";
+import { ObjectSchema, JoiObject } from 'joi';
 
 type ControllerAction = Hapi.Lifecycle.Method;
 
 type Controller = {
-  [name: string]: ControllerAction|any
+  [name: string]: ControllerAction|any,
 };
 
-export interface ResourceOptions {
-  auth?: string|object;
+export interface InheritableOptions {
+  auth?: false|string|Hapi.RouteOptionsAccess;
   controller?: Controller;
-  tags?: [string];
+  bind?: object|null;
+  pre?: Hapi.RouteOptionsPreArray;
   validatePayload?: ObjectSchema;
   validateParams?: ObjectSchema;
   validateQuery?: ObjectSchema;
@@ -34,22 +35,50 @@ type Path = string|ROOT;
 type RouteBuilder = (route: Route) => void;
 type ResourceBuilder<T extends Resource> = (resource: T) => void;
 
-type ResourceChildren = Map<string,ResourceNode>;
+type ResourceChildren = Map<string, ResourceNode>;
 type ResourceNodeVisitor = (name: string, path: string, route: Route) => boolean;
 
+class InheritedArray<T> {
+  values: T[];
+  parent?: InheritedArray<T>;
+  constructor(parent?: InheritedArray<T>) {
+    this.values = [];
+    this.parent = parent;
+  }
+  clear() {
+    this.values = [];
+    this.parent = undefined;
+  }
+  all(): T[] {
+    if (this.parent) {
+      return [...this.parent.all(), ...this.values];
+    }
+    return this.values;
+  }
+  push(val: T) {
+    this.values.push(val);
+  }
+}
+type Prerequisites = InheritedArray<Hapi.RouteOptionsPreAllOptions>;
+type Tags = InheritedArray<string>;
+
 class ResourceNode {
-  options: ResourceOptions;
+  options: InheritableOptions;
   name: string;
   path: Path;
-  constructor(name: string, path: Path, options: ResourceOptions|null = null) {
+  pre: Prerequisites;
+  tags: Tags;
+  constructor(name: string, path: Path, parent?: ResourceNode) {
     this.name = name;
     this.path = path;
-    this.options = Object.create(options);
+    this.options = Object.create(parent ? parent.options : null);
+    this.pre = new InheritedArray<Hapi.RouteOptionsPreAllOptions>(parent ? parent.pre : undefined);
+    this.tags = new InheritedArray<string>(parent ? parent.tags : undefined);
   }
   get auth() {
     return this.options.auth;
   }
-  set auth(val: string|object|undefined) {
+  set auth(val: false|string|Hapi.RouteOptionsAccess|undefined) {
     this.options.auth = val;
   }
   get controller() {
@@ -58,11 +87,12 @@ class ResourceNode {
   set controller(val: Controller|undefined) {
     this.options.controller = val;
   }
-  get tags() {
-    return this.options.tags;
+
+  get bind() {
+    return this.options.bind;
   }
-  set tags(val: [string]|undefined) {
-    this.options.tags = val;
+  set bind(val: object|null|undefined) {
+    this.options.bind = val;
   }
 
   get validate(): Validations {
@@ -74,7 +104,7 @@ class ResourceNode {
       },
       set: (val) => {
         this.options.validatePayload = val;
-      }
+      },
     });
     Object.defineProperty(validate, 'params', {
       get: () => {
@@ -82,7 +112,7 @@ class ResourceNode {
       },
       set: (val) => {
         this.options.validateParams = val;
-      }
+      },
     });
     Object.defineProperty(validate, 'query', {
       get: () => {
@@ -90,7 +120,7 @@ class ResourceNode {
       },
       set: (val) => {
         this.options.validateQuery = val;
-      }
+      },
     });
     Object.defineProperty(validate, 'response', {
       get: () => {
@@ -98,7 +128,7 @@ class ResourceNode {
       },
       set: (val) => {
         this.options.validateResponse = val;
-      }
+      },
     });
 
     return validate;
@@ -130,21 +160,31 @@ export class Route extends ResourceNode {
   method: Method;
   action: string|ControllerAction;
   description?: string;
-  notes?: string|[string];
-  cache?: object;
-  compression?: object;
-  cors?: boolean;
-  json?: object;
+  notes?: string|string[];
+  app?: Hapi.RouteOptionsApp;
+  cache?: false|Hapi.RouteOptionsCache;
+  compression?: Hapi.Util.Dictionary<Hapi.RouteCompressionEncoderSettings>;
+  cors?: boolean|Hapi.RouteOptionsCors;
+  files?: {
+    relativeTo: string;
+  };
+  json?: Hapi.Json.StringifyArguments;
   jsonp?: string;
   log?: object;
-  payload?: object;
-  plugins?: object;
-  response?: object;
-  security?: boolean|object;
-  state?: object;
-  timeout?: object;
-  constructor(method: Method, name: string, path: Path, options: ResourceOptions|null = null) {
-    super(name, path, options);
+  payload?: Hapi.RouteOptionsPayload;
+  plugins?: Hapi.PluginSpecificConfiguration;
+  response?: Hapi.RouteOptionsResponse;
+  security?: Hapi.RouteOptionsSecure;
+  state?: {
+    parse?: boolean;
+    failAction?: Hapi.Lifecycle.FailAction;
+  };
+  timeout?: {
+    server?: boolean | number;
+    socket?: boolean | number;
+  };
+  constructor(method: Method, name: string, path: Path, parent?: ResourceNode) {
+    super(name, path, parent);
     this.method = method;
     this.action = name;
   }
@@ -163,46 +203,89 @@ export interface SubscriptionConfig {
 
 export class SubscriptionRoute extends Route {
   config: SubscriptionConfig;
-  constructor(name: string, config: SubscriptionConfig, options: ResourceOptions|null = null) {
-    super('SUBSCRIPTION', name, ROOT, options);
+  constructor(name: string, config: SubscriptionConfig, parent?: ResourceNode) {
+    super('SUBSCRIPTION', name, ROOT, parent);
     this.config = config;
-  } 
+  }
 }
 
 export class Resource extends ResourceNode {
   children: ResourceChildren;
-  constructor(name: string, path: Path, options: ResourceOptions|null = null) {
-    super(name, path, options);
-    this.children = new Map<string,ResourceNode>();
+  constructor(name: string, path: Path, parent?: ResourceNode) {
+    super(name, path, parent);
+    this.children = new Map<string, ResourceNode>();
   }
-  
-  collection(name: string, builder: ResourceBuilder<CollectionResource>): CollectionResource;
-  collection(name: string, path: string, builder: ResourceBuilder<CollectionResource>): CollectionResource;
-  collection(name: string, pathOrBuilder: string|ResourceBuilder<CollectionResource>, builder?: ResourceBuilder<CollectionResource>): CollectionResource {
+
+  collection(
+    name: string,
+    builder: ResourceBuilder<CollectionResource>,
+  ): CollectionResource;
+  collection(
+    name: string,
+    path: string,
+    builder: ResourceBuilder<CollectionResource>,
+  ): CollectionResource;
+  collection(
+    name: string,
+    pathOrBuilder: string|ResourceBuilder<CollectionResource>,
+    builder?: ResourceBuilder<CollectionResource>,
+  ): CollectionResource {
     return this.addSubresource(CollectionResource, name, pathOrBuilder, builder);
   }
 
-  item(name: string, builder: ResourceBuilder<ItemResource>): ItemResource;
-  item(name: string, path: string, builder: ResourceBuilder<ItemResource>): ItemResource;
-  item(name: string, pathOrBuilder: string|ResourceBuilder<ItemResource>, builder?: ResourceBuilder<ItemResource>): ItemResource {
+  item(
+    name: string,
+    builder: ResourceBuilder<ItemResource>,
+  ): ItemResource;
+  item(
+    name: string,
+    path: string,
+    builder: ResourceBuilder<ItemResource>,
+  ): ItemResource;
+  item(
+    name: string,
+    pathOrBuilder:
+    string|ResourceBuilder<ItemResource>,
+    builder?: ResourceBuilder<ItemResource>,
+  ): ItemResource {
     return this.addSubresource(ItemResource, name, pathOrBuilder, builder);
   }
 
-  namespace(name: string, builder: ResourceBuilder<NamespaceResource>): NamespaceResource;
-  namespace(name: string, path: string, builder: ResourceBuilder<NamespaceResource>): NamespaceResource;
-  namespace(name: string, pathOrBuilder: string|ResourceBuilder<NamespaceResource>, builder?: ResourceBuilder<NamespaceResource>): NamespaceResource {
+  namespace(
+    name: string,
+    builder: ResourceBuilder<NamespaceResource>,
+  ): NamespaceResource;
+  namespace(
+    name: string,
+    path: string,
+    builder: ResourceBuilder<NamespaceResource>,
+  ): NamespaceResource;
+  namespace(
+    name: string,
+    pathOrBuilder: string|ResourceBuilder<NamespaceResource>,
+    builder?: ResourceBuilder<NamespaceResource>,
+  ): NamespaceResource {
     return this.addSubresource(NamespaceResource, name, pathOrBuilder, builder);
   }
 
-  group(name: string, builder: ResourceBuilder<GroupResource>): GroupResource {
-    const resource = new GroupResource(name, this.options);
+  group(
+    name: string,
+    builder: ResourceBuilder<GroupResource>,
+  ): GroupResource {
+    const resource = new GroupResource(name, this);
     builder(resource);
     this.addChild(resource.name, resource);
     return resource;
   }
 
-  addSubresource<T extends Resource>(TCreator: { new (name: string, path: Path, options?: ResourceOptions): T; }, name: string, pathOrBuilder: string|ResourceBuilder<T>, inBuilder?: ResourceBuilder<T>): T
-  {
+  addSubresource<T extends Resource>(
+    TCreator: {
+      new (name: string, path: Path, parent?: ResourceNode): T;
+    },
+    name: string,
+    pathOrBuilder: string|ResourceBuilder<T>,
+    inBuilder?: ResourceBuilder<T>,
+  ): T {
     let path;
     let builder;
     if (typeof pathOrBuilder === 'function') {
@@ -212,7 +295,7 @@ export class Resource extends ResourceNode {
       path = pathOrBuilder;
       builder = inBuilder!;
     }
-    const resource = new TCreator(name, path, this.options);
+    const resource = new TCreator(name, path, this);
     builder(resource);
     this.addChild(resource.name, resource);
     return resource;
@@ -231,34 +314,65 @@ export class Resource extends ResourceNode {
     return this.route('DELETE', 'destroy', routeBuilder);
   }
 
-  subscription(name: string, config: SubscriptionConfig, builder?: RouteBuilder): SubscriptionRoute {
-    const route = new SubscriptionRoute(name, config, this.options);
+  subscription(
+    name: string,
+    config: SubscriptionConfig,
+    builder?: RouteBuilder,
+  ): SubscriptionRoute {
+    const route = new SubscriptionRoute(name, config, this);
     if (builder) {
       builder(route);
     }
     this.addChild(route.name, route);
     return route;
   }
-  
-  route(method: HttpMethod, name: string, routeBuilder?: RouteBuilder): Route;
-  route(method: HttpMethod, name: string, path: string, routeBuilder?: RouteBuilder): Route;
-  route(method: HttpMethod, name: string, pathOrBuilder: any = ROOT, routeBuilder?: RouteBuilder): Route {
-    return this.addRoute(method, name, pathOrBuilder, routeBuilder);
+
+  rootRoute(
+    method: HttpMethod,
+    name: string,
+    routeBuilder?: RouteBuilder,
+  ): Route {
+    return this.addRoute(method, name, ROOT, routeBuilder);
   }
-  
-  addRoute(method: HttpMethod, name: string, pathOrBuilder: any = ROOT, routeBuilder?: RouteBuilder): Route {
-    let path: Path;
-    let builder;
-    if (typeof pathOrBuilder === 'function') {
-      path = ROOT;
-      builder = pathOrBuilder;
+
+  route(
+    method: HttpMethod,
+    name: string,
+    routeBuilder?: RouteBuilder,
+  ): Route
+  route(
+    method: HttpMethod,
+    name: string,
+    path: string,
+    routeBuilder?: RouteBuilder,
+  ): Route;
+  route(
+    method: HttpMethod,
+    name: string,
+    pathOrRouteBuilder?: string|RouteBuilder,
+    inRouteBuilder?: RouteBuilder,
+  ): Route {
+    let path: string;
+    let routeBuilder: RouteBuilder|undefined;
+    if (typeof pathOrRouteBuilder === 'string') {
+      path = pathOrRouteBuilder;
+      routeBuilder = inRouteBuilder;
     } else {
-      path = pathOrBuilder;
-      builder = routeBuilder;
+      path = name;
+      routeBuilder = pathOrRouteBuilder;
     }
-    const route = new Route(method, name, path, this.options);
-    if (builder) {
-      builder(route);
+    return this.addRoute(method, name, path, routeBuilder);
+  }
+
+  addRoute(
+    method: HttpMethod,
+    name: string,
+    path: Path,
+    routeBuilder?: RouteBuilder,
+  ): Route {
+    const route = new Route(method, name, path, this);
+    if (routeBuilder) {
+      routeBuilder(route);
     }
     this.addChild(route.name, route);
     return route;
@@ -291,16 +405,16 @@ export class CollectionResource extends Resource {
   }
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
-      this.itemsResource = new CollectionItemResource(name, ROOT, this.options);
+      this.itemsResource = new CollectionItemResource(name, ROOT, this);
     }
     builder(this.itemsResource);
     return this.itemsResource;
   }
   group(name: string, builder: ResourceBuilder<CollectionGroupResource>): CollectionGroupResource {
-    const resource = new CollectionGroupResource(name, this.options);
+    const resource = new CollectionGroupResource(name, this);
     builder(resource);
     this.addChild(resource.name, resource);
-    return resource
+    return resource;
   }
   visit(baseName: string, basePath: string, visitor: ResourceNodeVisitor): boolean {
     if (!super.visit(baseName, basePath, visitor)) {
@@ -323,10 +437,10 @@ export class ItemResource extends Resource {
     return this.route('GET', 'show', routeBuilder);
   }
   group(name: string, builder: ResourceBuilder<ItemGroupResource>): ItemGroupResource {
-    const resource = new ItemGroupResource(name, this.options);
+    const resource = new ItemGroupResource(name, this);
     builder(resource);
     this.addChild(resource.name, resource);
-    return resource
+    return resource;
   }
 }
 
@@ -337,8 +451,8 @@ export class NamespaceResource extends Resource {
 }
 
 export class GroupResource extends Resource {
-  constructor(name: string, options: ResourceOptions|null = null) {
-    super(name, ROOT, options);
+  constructor(name: string, parent: ResourceNode|undefined) {
+    super(name, ROOT, parent);
   }
 
   joinName(baseName: string) {
@@ -357,7 +471,7 @@ export class CollectionGroupResource extends GroupResource {
   }
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
-      this.itemsResource = new CollectionItemResource(name, ROOT, this.options);
+      this.itemsResource = new CollectionItemResource(name, ROOT, this);
     }
     builder(this.itemsResource);
     return this.itemsResource;
@@ -391,8 +505,8 @@ export interface ResourceRouterOptions {
 type ResourceRouterRoutes = {
   [name: string]: {
     path: string,
-    route: Route
-  }
+    route: Route,
+  },
 };
 
 class ResourceRouter extends Resource {
@@ -416,8 +530,8 @@ class ResourceRouter extends Resource {
       }
       this.routes[canonicalName] = {
         path,
-        route
-      }
+        route,
+      };
       return true;
     });
   }

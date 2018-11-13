@@ -2,12 +2,11 @@ import { ResourceRouter } from '../../lib';
 
 import HomeController from './HomeController';
 import UsersController from './UsersController';
-import { validate } from 'joi';
 
 export default (routes: ResourceRouter) => {
   routes.controller = HomeController;
-  routes.route('GET', 'home');
-  routes.route('GET', 'banana', 'banana', banana => {
+  routes.rootRoute('GET', 'home');
+  routes.route('GET', 'banana', banana => {
     banana.action = 'getBanana';
   });
   routes.collection('users', users => {
