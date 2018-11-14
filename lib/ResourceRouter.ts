@@ -339,7 +339,7 @@ export class Resource extends ResourceNode {
     method: HttpMethod,
     name: string,
     routeBuilder?: RouteBuilder,
-  ): Route
+  ): Route;
   route(
     method: HttpMethod,
     name: string,

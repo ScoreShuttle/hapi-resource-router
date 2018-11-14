@@ -1,5 +1,6 @@
 import Hapi from 'hapi';
 import ResourceRouter, { Route, SubscriptionRoute, ResourceRouterOptions } from './ResourceRouter';
+// @ts-ignore
 import packageJson from '../package.json';
 
 declare module 'hapi' {
