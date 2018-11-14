@@ -499,6 +499,7 @@ export class ItemGroupResource extends GroupResource {
 }
 
 export interface ResourceRouterOptions {
+  baseUrl?: string;
   basePath?: string;
 }
 
@@ -521,6 +522,29 @@ class ResourceRouter extends Resource {
     builder(this);
     this.build();
     return this;
+  }
+  get(name: string) {
+    return this.routes[name];
+  }
+  href(name: string, params: { [key: string]: any }) {
+    const route = this.get(name);
+    let path = route.path.replace(/\{(\w+)\}/g, (match, param) => {
+      const result = params[param];
+      if (!result) {
+        throw new Error(`Route.href: Unmatched route parameter="${param}", route="${name}"`);
+      }
+      if (typeof result === 'object' && 'toParam' in result) {
+        return result.toParam();
+      }
+      return String(result);
+    });
+    if (this.mapOptions.baseUrl) {
+      if (path === '/') {
+        path = '';
+      }
+      return `${this.mapOptions.baseUrl}${path}`;
+    }
+    return path;
   }
   build() {
     this.routes = {};
