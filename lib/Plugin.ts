@@ -91,6 +91,7 @@ const internals = {
         method: route.method,
         handler: internals.getHandler(route),
         options: {
+          id: name,
           description: route.description,
           notes: route.notes,
           auth: route.auth,
