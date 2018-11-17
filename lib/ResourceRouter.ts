@@ -1,10 +1,19 @@
 import Hapi from 'hapi';
-import { ObjectSchema, JoiObject } from 'joi';
+import { ObjectSchema, Schema } from 'joi';
 
 type ControllerAction = Hapi.Lifecycle.Method;
 
+type JoiThing = { [field: string]: Schema }|ObjectSchema
+type Validator = { [action: string]: JoiThing }|((action: string) => JoiThing);
+
 type Controller = {
-  [name: string]: ControllerAction|any,
+  validate?: {
+    payload?: Validator;
+    params?: Validator;
+    query?: Validator;
+    response?: Validator;
+  },
+  [action: string]: ControllerAction|any,
 };
 
 export interface InheritableOptions {
@@ -12,17 +21,17 @@ export interface InheritableOptions {
   controller?: Controller;
   bind?: object|null;
   pre?: Hapi.RouteOptionsPreArray;
-  validatePayload?: ObjectSchema;
-  validateParams?: ObjectSchema;
-  validateQuery?: ObjectSchema;
-  validateResponse?: ObjectSchema;
+  validatePayload?: JoiThing;
+  validateParams?: JoiThing;
+  validateQuery?: JoiThing;
+  validateResponse?: JoiThing;
 }
 
 interface Validations {
-  payload?: JoiObject;
-  params?: JoiObject;
-  query?: JoiObject;
-  response?: JoiObject;
+  payload?: JoiThing;
+  params?: JoiThing;
+  query?: JoiThing;
+  response?: JoiThing;
 }
 
 const ROOT = Symbol('ROOT');

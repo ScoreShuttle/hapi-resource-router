@@ -49,22 +49,48 @@ const internals = {
     }
     return config;
   },
+  resolveControllerValidator(route: Route, key: 'params'|'query'|'response'|'payload', fallback?: any) {
+    if (key === 'payload' && this.skipPayloadValidation(route)) {
+      return;
+    }
+
+    if (typeof route.action !== 'string') {
+      return fallback;
+    }
+
+    const controller = route.options.controller;
+    if (!controller || !controller.validate) {
+      return fallback;
+    }
+
+    const validator = controller.validate[key];
+    if (!validator) {
+      return fallback;
+    }
+
+    let validate;
+    if (typeof validator === 'function') {
+      validate = validator(route.action);
+    } else {
+      validate = validator[route.action];
+    }
+    if (validate) {
+      return validate;
+    }
+    return fallback;
+  },
   buildValidate(route: Route) {
     return {
-      params: route.options.validateParams,
-      query: route.options.validateQuery,
-      response: route.options.validateResponse,
-      payload:
-        this.skipPayloadValidation(route)
-          ? undefined
-          : route.options.validatePayload,
+      params: this.resolveControllerValidator(route, 'params', route.options.validateParams),
+      query: this.resolveControllerValidator(route, 'query', route.options.validateQuery),
+      response: this.resolveControllerValidator(route, 'response', route.options.validateResponse),
+      payload: this.resolveControllerValidator(route, 'payload', route.options.validatePayload),
     };
   },
   skipPayloadValidation(route: Route) {
     return skipPayloadValidationMethods.has(route.method);
   },
   async onPostStart(server: Hapi.Server) {
-
     const routes = server.resources().routes;
 
     for (const name of Object.keys(routes)) {
