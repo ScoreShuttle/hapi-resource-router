@@ -46,7 +46,7 @@ describe('ResourceRouter', () => {
     expect(routes['users[user].show'].route.auth).to.equal(undefined);
     expect(routes['users[user].update'].route.auth).to.equal('admin');
 
-    expect(routes['users.create'].route.validate.payload).to.equal(userSchema);
+    expect(<Joi.AnySchema>routes['users.create'].route.validate.payload).to.equal(userSchema);
   });
   it('generates URLs using href()', () => {
     const router = new ResourceRouter({

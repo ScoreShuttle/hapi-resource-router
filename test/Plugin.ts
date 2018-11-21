@@ -91,6 +91,33 @@ describe('Plugin', () => {
             banana: Joi.number().required().max(0)
           };
         });
+
+        routes.namespace('example', example => {
+          class V {
+            field: string;
+            constructor(field) {
+              this.field = field;
+            }
+            payload(action: string) {
+              return Joi.object({
+                [this.field]: Joi.string().required()
+              });
+            }
+            query = (action: string) => {
+              return Joi.object({
+                refresh: Joi.boolean().optional().default(false)
+              });
+            }
+          }
+
+          example.controller = {
+            act({ payload: { friend }, query: { refresh } }) {
+              return { friend, refresh };
+            },
+            validate: new V('friend')
+          };
+          example.route('PUT', 'act');
+        });
       });
 
       await server.start();
@@ -153,6 +180,21 @@ describe('Plugin', () => {
       });
       expect(squareResponse.statusCode).to.equal(200);
       expect(squareResponse.result as any as number).to.equal(400);
+    });
+
+    it('retains the "this" on the validator functions', async () => {
+      const squareResponse = await server.inject({
+        method: 'PUT',
+        url: '/example/act?refresh=true',
+        payload: {
+          friend: 'matt'
+        }
+      });
+      expect(squareResponse.statusCode).to.equal(200);
+      expect(squareResponse.result as any as object).to.equal({
+        friend: 'matt',
+        refresh: true
+      });
     });
   })
 });

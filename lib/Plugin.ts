@@ -63,16 +63,17 @@ const internals = {
       return fallback;
     }
 
-    const validator = controller.validate[key];
-    if (!validator) {
+    const validator = controller.validate;
+    const validationEntry = controller.validate[key];
+    if (!validationEntry) {
       return fallback;
     }
 
     let validate;
-    if (typeof validator === 'function') {
-      validate = validator(route.action);
+    if (typeof validationEntry === 'function') {
+      validate = validationEntry.apply(validator, [route.action]);
     } else {
-      validate = validator[route.action];
+      validate = validationEntry[route.action];
     }
     if (validate) {
       return validate;

@@ -1,9 +1,9 @@
 import Hapi from 'hapi';
-import { ObjectSchema, Schema } from 'joi';
+import { ObjectSchema, AnySchema } from 'joi';
 
 type ControllerAction = Hapi.Lifecycle.Method;
 
-type JoiThing = { [field: string]: Schema }|ObjectSchema
+type JoiThing = Hapi.ValidationObject|AnySchema;
 type Validator = { [action: string]: JoiThing }|((action: string) => JoiThing);
 
 type Controller = {
