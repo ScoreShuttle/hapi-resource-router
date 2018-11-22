@@ -46,6 +46,38 @@ describe('Plugin', () => {
     expect(userIds).to.not.contain(1);
   });
 
+  describe('controllers', () => {
+    let server: Hapi.Server;
+    before(async () => {
+      server = new Hapi.Server();
+      await server.register({ plugin: Plugin, options: {} });
+      server.resources().add((routes) => {
+        class Controller {
+          responder: string;
+          constructor(res: string) {
+            this.responder = res;
+          }
+          submit(request) {
+            return this.responder;
+          }
+        }
+        routes.controller = new Controller('hey!');
+
+        routes.route('POST', 'submit');
+      });
+      await server.start();
+    });
+    it('is bound as "this" to the handler functions', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/submit',
+        payload: {}
+      });
+      expect(response.statusCode).to.equal(200);
+      expect(response.payload).to.equal('hey!');
+    });
+  });
+
   describe('validation', () => {
     let server: Hapi.Server;
     before(async () => {

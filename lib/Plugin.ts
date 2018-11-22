@@ -32,7 +32,7 @@ const internals = {
       if (!(route.controller && route.controller[route.action])) {
         return undefined;
       }
-      return route.controller[route.action];
+      return route.controller[route.action].bind(route.controller);
     }
     return route.action;
   },
