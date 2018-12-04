@@ -6,21 +6,30 @@ type ControllerAction = Hapi.Lifecycle.Method;
 type JoiThing = Hapi.ValidationObject|AnySchema;
 type Validator = { [action: string]: JoiThing }|((action: string) => JoiThing);
 
-type Controller = {
-  validate?: {
-    payload?: Validator;
-    params?: Validator;
-    query?: Validator;
-    response?: Validator;
-  },
-  [action: string]: ControllerAction|any,
+interface Validate {
+  payload?: Validator;
+  params?: Validator;
+  query?: Validator;
+  response?: Validator;
 };
+
+type ControllerObject = {
+  validate?: Validate;
+  [action: string]: ControllerAction|any;
+};
+
+type ControllerInstance = {
+  constructor: {
+    validate?: Validate;
+  }
+  [action: string]: ControllerAction|any;
+};
+type Controller = ControllerObject|ControllerInstance;
 
 export interface InheritableOptions {
   auth?: false|string|Hapi.RouteOptionsAccess;
   controller?: Controller;
   bind?: object|null;
-  pre?: Hapi.RouteOptionsPreArray;
   validatePayload?: JoiThing;
   validateParams?: JoiThing;
   validateQuery?: JoiThing;

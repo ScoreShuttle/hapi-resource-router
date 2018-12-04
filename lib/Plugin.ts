@@ -59,12 +59,20 @@ const internals = {
     }
 
     const controller = route.options.controller;
-    if (!controller || !controller.validate) {
+    if (!controller) {
       return fallback;
     }
 
-    const validator = controller.validate;
-    const validationEntry = controller.validate[key];
+    let validator = controller.validate;
+    if (!validator && controller.constructor && 'validate' in controller.constructor) {
+      validator = controller.constructor.validate;
+    }
+
+    if (!validator) {
+      return fallback;
+    }
+
+    const validationEntry = validator[key];
     if (!validationEntry) {
       return fallback;
     }

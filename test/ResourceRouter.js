@@ -1,11 +1,10 @@
-import { expect } from 'code';
-import Lab from 'lab';
-export const lab = Lab.script();
-const { describe, it } = lab;
-import Hapi from 'hapi';
-import Joi from 'joi';
+const { expect } = require('code');
+const Lab = require('lab');
+const lab = exports.lab = Lab.script();
+const { describe, it, before } = lab;
+const Joi =  require('joi');
 
-import ResourceRouter from '../lib/ResourceRouter';
+const { ResourceRouter } = require('../lib');
 
 describe('ResourceRouter', () => {
   it('builds routes', () => {
@@ -46,7 +45,7 @@ describe('ResourceRouter', () => {
     expect(routes['users[user].show'].route.auth).to.equal(undefined);
     expect(routes['users[user].update'].route.auth).to.equal('admin');
 
-    expect(<Joi.AnySchema>routes['users.create'].route.validate.payload).to.equal(userSchema);
+    expect(routes['users.create'].route.validate.payload).to.equal(userSchema);
   });
   it('generates URLs using href()', () => {
     const router = new ResourceRouter({

@@ -1,26 +1,26 @@
-import { expect } from 'code';
-import Lab from 'lab';
-export const lab = Lab.script();
+const { expect } = require('code');
+const Lab = require('lab');
+const lab = exports.lab = Lab.script();
 const { describe, it, before } = lab;
-import Hapi from 'hapi';
-import Joi, { ValidationError } from 'joi';
-import Boom from 'boom';
+const Hapi = require('hapi');
+const Joi =  require('joi');
+const Boom = require('boom');
 
-import Plugin from '../lib/Plugin';
-import Routes from './helpers/Routes';
+const Plugin = require('../lib').default;
+const resources = require('./helpers/resources').default;
 
-const isValidationError = (err: any): err is ValidationError => {
+const isValidationError = (err) => {
   return err.isJoi && err.name === 'ValidationError';
 }
 
 describe('Plugin', () => {
   it('registers', async () => {
 
-    const server: Hapi.Server = new Hapi.Server();
+    const server = new Hapi.Server();
     await server.register({ plugin: Plugin, options: {
       basePath: '/api'
     } });
-    server.resources().add(Routes);
+    server.resources().add(resources);
     await server.start();
 
     const response = await server.inject({
@@ -47,14 +47,13 @@ describe('Plugin', () => {
   });
 
   describe('controllers', () => {
-    let server: Hapi.Server;
+    let server;
     before(async () => {
       server = new Hapi.Server();
       await server.register({ plugin: Plugin, options: {} });
       server.resources().add((routes) => {
         class Controller {
-          responder: string;
-          constructor(res: string) {
+          constructor(res) {
             this.responder = res;
           }
           submit(request) {
@@ -79,7 +78,7 @@ describe('Plugin', () => {
   });
 
   describe('validation', () => {
-    let server: Hapi.Server;
+    let server;
     before(async () => {
       server = new Hapi.Server({
         routes: {
@@ -87,7 +86,7 @@ describe('Plugin', () => {
             async failAction(request, h, err) {
               if (isValidationError(err)) {
                 const badData =  Boom.badData('Validation error');
-                (badData.output.payload as any).details = err.details;
+                badData.output.payload.details = err.details;
                 throw badData;
               } else {
                 throw Boom.badImplementation();
@@ -126,16 +125,15 @@ describe('Plugin', () => {
 
         routes.namespace('example', example => {
           class V {
-            field: string;
             constructor(field) {
               this.field = field;
             }
-            payload(action: string) {
+            payload(action) {
               return Joi.object({
                 [this.field]: Joi.string().required()
               });
             }
-            query = (action: string) => {
+            query(action) {
               return Joi.object({
                 refresh: Joi.boolean().optional().default(false)
               });
@@ -150,6 +148,33 @@ describe('Plugin', () => {
           };
           example.route('PUT', 'act');
         });
+
+        routes.collection('instances', instances => {
+          class InstancesController {
+            constructor(val) {
+              this.val = val;
+            }
+            index(request, h) {
+              const result = this.val[request.query.q];
+              if (!result) {
+                return h.response().code(404);
+              }
+              return result;
+            }
+          }
+          InstancesController.validate = {
+            query: {
+              index: {
+                q: Joi.string().required()
+              }
+            }
+          };
+          
+          instances.controller = new InstancesController({
+            banana: 'HI'
+          });
+          instances.index();
+        });
       });
 
       await server.start();
@@ -162,7 +187,7 @@ describe('Plugin', () => {
         payload: {}
       });
       expect(notPresentResponse.statusCode).to.equal(422);
-      const error = (notPresentResponse.result as any).details[0];
+      const error = notPresentResponse.result.details[0];
       expect(error.path).to.equal(['banana']);
       expect(error.type).to.equal('any.required');
     });
@@ -211,7 +236,7 @@ describe('Plugin', () => {
         }
       });
       expect(squareResponse.statusCode).to.equal(200);
-      expect(squareResponse.result as any as number).to.equal(400);
+      expect(squareResponse.result).to.equal(400);
     });
 
     it('retains the "this" on the validator functions', async () => {
@@ -223,10 +248,24 @@ describe('Plugin', () => {
         }
       });
       expect(squareResponse.statusCode).to.equal(200);
-      expect(squareResponse.result as any as object).to.equal({
+      expect(squareResponse.result).to.equal({
         friend: 'matt',
         refresh: true
       });
+    });
+
+    it('uses the static validate on controller instances', async () => {
+      const invalidResponse = await server.inject({
+        method: 'GET',
+        url: '/instances',
+      });
+      expect(invalidResponse.statusCode).to.equal(422);
+
+      const validResponse = await server.inject({
+        method: 'GET',
+        url: '/instances?q=banana',
+      });
+      expect(validResponse.result).to.equal('HI');
     });
   })
 });
