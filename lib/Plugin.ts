@@ -7,6 +7,11 @@ declare module 'hapi' {
   export interface Server {
     resources: () => ResourceRouter;
   }
+  export interface PluginSpecificConfiguration {
+    resourceRouter?: {
+      controller?: any;
+    }
+  }
 }
 
 const skipPayloadValidationMethods = new Set([
@@ -134,6 +139,11 @@ const internals = {
           pre: route.pre.all(),
           payload: route.payload,
           validate: internals.buildValidate(route),
+          plugins: {
+            resourceRouter: {
+              controller: route.options.controller,
+            }
+          },
         },
       });
     }
