@@ -3,6 +3,8 @@ import { ResourceRouter } from '../../lib';
 import HomeController from './HomeController';
 import UsersController from './UsersController';
 
+// tslint:disable: ter-arrow-parens
+
 export default (routes: ResourceRouter) => {
   routes.controller = HomeController;
   routes.rootRoute('GET', 'home');

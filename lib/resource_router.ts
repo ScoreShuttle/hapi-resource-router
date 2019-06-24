@@ -1,34 +1,12 @@
 import Hapi from 'hapi';
-import { ObjectSchema, AnySchema } from 'joi';
-
-type ControllerAction = Hapi.Lifecycle.Method;
-
-type JoiThing = Hapi.ValidationObject|AnySchema;
-type Validator = { [action: string]: JoiThing }|((action: string) => JoiThing);
-
-interface Validate {
-  payload?: Validator;
-  params?: Validator;
-  query?: Validator;
-  response?: Validator;
-};
-
-type ControllerObject = {
-  validate?: Validate;
-  [action: string]: ControllerAction|any;
-};
-
-type ControllerInstance = {
-  constructor: {
-    validate?: Validate;
-  }
-  [action: string]: ControllerAction|any;
-};
-type Controller = ControllerObject|ControllerInstance;
+import {
+  JoiThing,
+  Controller,
+} from './controller';
 
 export interface InheritableOptions {
   auth?: false|string|Hapi.RouteOptionsAccess;
-  controller?: Controller;
+  controller?: string|Controller;
   bind?: object|null;
   validatePayload?: JoiThing;
   validateParams?: JoiThing;
@@ -102,7 +80,7 @@ class ResourceNode {
   get controller() {
     return this.options.controller;
   }
-  set controller(val: Controller|undefined) {
+  set controller(val: string|Controller|undefined) {
     this.options.controller = val;
   }
 
@@ -176,7 +154,7 @@ class ResourceNode {
 
 export class Route extends ResourceNode {
   method: Method;
-  action: string|ControllerAction;
+  action: string|Hapi.Lifecycle.Method;
   description?: string;
   notes?: string|string[];
   app?: Hapi.RouteOptionsApp;
@@ -529,11 +507,11 @@ type ResourceRouterRoutes = {
 };
 
 class ResourceRouter extends Resource {
-  mapOptions: ResourceRouterOptions;
+  routerOptions: ResourceRouterOptions;
   routes: ResourceRouterRoutes;
   constructor(mapOptions: ResourceRouterOptions) {
     super('ROUTER', ROOT);
-    this.mapOptions = mapOptions;
+    this.routerOptions = mapOptions;
     this.routes = {};
   }
   add(builder: ResourceBuilder<ResourceRouter>) {
@@ -544,7 +522,8 @@ class ResourceRouter extends Resource {
   get(name: string) {
     return this.routes[name];
   }
-  href(name: string, params: { [key: string]: any }) {
+  href(name: string, params: { [key: string]: any }, options: Partial<ResourceRouterOptions> = {}) {
+    const baseUrl = ('baseUrl' in options) ? options.baseUrl : this.routerOptions.baseUrl;
     const route = this.get(name);
     let path = route.path.replace(/\{(\w+)\}/g, (match, param) => {
       const result = params[param];
@@ -556,17 +535,17 @@ class ResourceRouter extends Resource {
       }
       return String(result);
     });
-    if (this.mapOptions.baseUrl) {
+    if (baseUrl) {
       if (path === '/') {
         path = '';
       }
-      return `${this.mapOptions.baseUrl}${path}`;
+      return `${baseUrl}${path}`;
     }
     return path;
   }
   build() {
     this.routes = {};
-    this.visit('', this.mapOptions.basePath || '/', (canonicalName, path, route) => {
+    this.visit('', this.routerOptions.basePath || '/', (canonicalName, path, route) => {
       if (this.routes[canonicalName]) {
         throw new Error(`Duplicate route name: ${canonicalName}`);
       }

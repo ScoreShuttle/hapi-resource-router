@@ -13,6 +13,14 @@ const isValidationError = (err) => {
   return err.isJoi && err.name === 'ValidationError';
 }
 
+class Controller {
+  constructor(res, action = 'submit') {
+    this[action] = (request) => {
+      return res;
+    };
+  }
+}
+
 describe('Plugin', () => {
   it('registers', async () => {
 
@@ -52,14 +60,6 @@ describe('Plugin', () => {
       server = new Hapi.Server();
       await server.register({ plugin: Plugin, options: {} });
       server.resources().add((routes) => {
-        class Controller {
-          constructor(res) {
-            this.responder = res;
-          }
-          submit(request) {
-            return this.responder;
-          }
-        }
         routes.controller = new Controller('hey!');
 
         routes.route('POST', 'submit');
@@ -169,7 +169,7 @@ describe('Plugin', () => {
               }
             }
           };
-          
+
           instances.controller = new InstancesController({
             banana: 'HI'
           });
@@ -267,5 +267,79 @@ describe('Plugin', () => {
       });
       expect(validResponse.result).to.equal('HI');
     });
-  })
+  });
+
+  describe('controllers', () => {
+    it('accepts a map of controllers', async () => {
+      const server = new Hapi.Server();
+      await server.register({
+        plugin: Plugin,
+        options: {
+          basePath: '/api',
+          controllers: {
+            home: new Controller('home!', 'home'),
+            banana: new Controller('banana!', 'banana'),
+          },
+        }
+      });
+      server.resources().add((routes) => {
+        routes.route('GET', 'home', home => {
+          home.controller = 'home';
+        });
+        routes.route('GET', 'banana', banana => {
+          banana.controller = 'banana';
+        });
+      });
+      await server.start();
+
+      const homeResponse = await server.inject({
+        method: 'GET',
+        url: '/api/home',
+      });
+      expect(homeResponse.payload).to.equal('home!');
+
+      const bananaResponse = await server.inject({
+        method: 'GET',
+        url: '/api/banana',
+      });
+      expect(bananaResponse.payload).to.equal('banana!');
+    });
+
+    it('accepts a promise for a map of controllers', async () => {
+      const server = new Hapi.Server();
+      await server.register({
+        plugin: Plugin,
+        options: {
+          basePath: '/api',
+          async controllers() {
+            return {
+              home: new Controller('home!', 'home'),
+              banana: new Controller('banana!', 'banana'),
+            };
+          },
+        },
+      });
+      server.resources().add((routes) => {
+        routes.route('GET', 'home', home => {
+          home.controller = 'home';
+        });
+        routes.route('GET', 'banana', banana => {
+          banana.controller = 'banana';
+        });
+      });
+      await server.start();
+
+      const homeResponse = await server.inject({
+        method: 'GET',
+        url: '/api/home',
+      });
+      expect(homeResponse.payload).to.equal('home!');
+
+      const bananaResponse = await server.inject({
+        method: 'GET',
+        url: '/api/banana',
+      });
+      expect(bananaResponse.payload).to.equal('banana!');
+    });
+  });
 });
