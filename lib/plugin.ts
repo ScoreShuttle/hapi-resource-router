@@ -2,7 +2,7 @@ import Hapi, { Plugin } from 'hapi';
 import ResourceRouter, { Route, SubscriptionRoute, ResourceRouterOptions } from './resource_router';
 // @ts-ignore
 import packageJson from '../package.json';
-import { Controller } from 'controller';
+import { Controller, ControllerClass } from 'controller';
 
 declare module 'hapi' {
   export interface Server {
@@ -13,10 +13,16 @@ declare module 'hapi' {
       controller?: any;
     };
   }
+
+  export interface PluginProperties {
+    resourceRouter?: {
+      resolveController?: (name: string) => Controller;
+    };
+  }
 }
 
 export type ControllerMap = {
-  [name: string]: Controller;
+  [name: string]: Controller|ControllerClass;
 };
 
 export type ControllerResolver = () => Promise<ControllerMap>;
@@ -44,15 +50,27 @@ function isSubscription(route: Route): route is SubscriptionRoute {
 
 class Internals {
   options: PluginOptions;
+  controllerMap?: ControllerMap;
   constructor(options: PluginOptions) {
     this.options = options;
   }
-  resolveController(controllers: undefined|ControllerMap, route: Route) {
+  resolveController(name: string, ...args: any[]) {
+    if (!(this.controllerMap && this.controllerMap[name])) {
+      throw new Error(`Missing controller ${name}`);
+    }
+
+    const controller = this.controllerMap[name];
+    if (typeof controller === 'function') {
+      return new controller(...args);
+    }
+    return controller;
+  }
+  resolveControllerForRoute(route: Route) {
+    if (Array.isArray(route.controller)) {
+      return this.resolveController(route.controller[0], ...route.controller.slice(1));
+    }
     if (typeof route.controller === 'string') {
-      if (!(controllers && controllers[route.controller])) {
-        throw new Error(`Missing controller for ${route.name}: ${route.controller}`);
-      }
-      return controllers[route.controller];
+      return this.resolveController(route.controller);
     }
     return route.controller!;
   }
@@ -61,7 +79,7 @@ class Internals {
       if (!(route.controller && controller[route.action])) {
         return null;
       }
-      return controller[route.action].bind(route.controller);
+      return controller[route.action].bind(controller);
     }
     return route.action;
   }
@@ -156,19 +174,18 @@ class Internals {
   async onPostStart(server: Hapi.Server) {
     const routes = server.resources().routes;
 
-    let controllers;
     if (this.options.controllers) {
       if (typeof this.options.controllers === 'function') {
-        controllers = await this.options.controllers();
+        this.controllerMap = await this.options.controllers();
       } else {
-        controllers = this.options.controllers;
+        this.controllerMap = this.options.controllers;
       }
     }
 
     for (const name of Object.keys(routes)) {
       const { path, route } = routes[name];
 
-      const controller = this.resolveController(controllers, route);
+      const controller = this.resolveControllerForRoute(route);
 
       if (isSubscription(route)) {
         const subscribableServer: Hapi.Server|Subscribable = server;
@@ -215,6 +232,7 @@ const plugin: Hapi.Plugin<PluginOptions> = {
     const internals = new Internals(options);
     const router = new ResourceRouter(options);
     server.decorate('server', 'resources', () => router);
+    server.expose('resolveController', internals.resolveController.bind(internals));
 
     server.ext({
       type: 'onPostStart',

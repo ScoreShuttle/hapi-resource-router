@@ -306,6 +306,15 @@ describe('Plugin', () => {
     });
 
     it('accepts a promise for a map of controllers', async () => {
+      class BananaController {
+        constructor(numero) {
+          this.numero = numero;
+        }
+        banana() {
+          return { numero: this.numero };
+        }
+      }
+
       const server = new Hapi.Server();
       await server.register({
         plugin: Plugin,
@@ -314,7 +323,7 @@ describe('Plugin', () => {
           async controllers() {
             return {
               home: new Controller('home!', 'home'),
-              banana: new Controller('banana!', 'banana'),
+              banana: BananaController,
             };
           },
         },
@@ -324,7 +333,7 @@ describe('Plugin', () => {
           home.controller = 'home';
         });
         routes.route('GET', 'banana', banana => {
-          banana.controller = 'banana';
+          banana.controller = ['banana', 500];
         });
       });
       await server.start();
@@ -339,7 +348,7 @@ describe('Plugin', () => {
         method: 'GET',
         url: '/api/banana',
       });
-      expect(bananaResponse.payload).to.equal('banana!');
+      expect(JSON.parse(bananaResponse.payload)).to.equal({ numero: 500 });
     });
   });
 });

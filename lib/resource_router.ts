@@ -6,7 +6,7 @@ import {
 
 export interface InheritableOptions {
   auth?: false|string|Hapi.RouteOptionsAccess;
-  controller?: string|Controller;
+  controller?: string|[string, ...any[]]|Controller;
   bind?: object|null;
   validatePayload?: JoiThing;
   validateParams?: JoiThing;

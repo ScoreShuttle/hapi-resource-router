@@ -26,3 +26,5 @@ type ControllerInstance = {
 };
 
 export type Controller = ControllerObject|ControllerInstance;
+
+export type ControllerClass = new (...args: any) => ControllerInstance;
