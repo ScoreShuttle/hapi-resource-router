@@ -193,10 +193,10 @@ class Internals {
           subscribableServer.subscription(
             path,
             {
+              ...route.config,
               filter: this.getSubscriptionHandler(route, controller, 'filter'),
               onSubscribe: this.getSubscriptionHandler(route, controller, 'onSubscribe'),
               onUnsubscribe: this.getSubscriptionHandler(route, controller, 'onUnsubscribe'),
-              auth: route.config.auth,
             },
           );
         }
