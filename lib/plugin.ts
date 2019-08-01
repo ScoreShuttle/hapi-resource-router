@@ -2,7 +2,7 @@ import Hapi, { Plugin } from 'hapi';
 import ResourceRouter, { Route, SubscriptionRoute, ResourceRouterOptions } from './resource_router';
 // @ts-ignore
 import packageJson from '../package.json';
-import { Controller, ControllerClass } from 'controller';
+import { Controller, ControllerClass } from './controller';
 
 declare module 'hapi' {
   export interface Server {
