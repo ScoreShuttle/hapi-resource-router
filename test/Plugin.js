@@ -1,10 +1,10 @@
-const { expect } = require('code');
-const Lab = require('lab');
+const { expect } = require('@hapi/code');
+const Lab = require('@hapi/lab');
 const lab = exports.lab = Lab.script();
 const { describe, it, before } = lab;
-const Hapi = require('hapi');
-const Joi =  require('joi');
-const Boom = require('boom');
+const Hapi = require('@hapi/hapi');
+const Joi =  require('@hapi/joi');
+const Boom = require('@hapi/boom');
 
 const Plugin = require('../lib').default;
 const resources = require('./helpers/resources').default;

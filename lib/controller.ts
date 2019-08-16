@@ -1,5 +1,5 @@
-import Hapi from 'hapi';
-import { AnySchema } from 'joi';
+import Hapi from '@hapi/hapi';
+import { AnySchema } from '@hapi/joi';
 
 type ControllerAction = Hapi.Lifecycle.Method;
 

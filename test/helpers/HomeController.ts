@@ -1,4 +1,4 @@
-import Hapi from 'hapi';
+import Hapi from '@hapi/hapi';
 
 const HomeController = {
   async home(request: Hapi.Request, h: Hapi.ResponseToolkit) {

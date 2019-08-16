@@ -1,10 +1,10 @@
-import Hapi, { Plugin } from 'hapi';
+import Hapi, { Plugin } from '@hapi/hapi';
 import ResourceRouter, { Route, SubscriptionRoute, ResourceRouterOptions } from './resource_router';
 // @ts-ignore
 import packageJson from '../package.json';
 import { Controller, ControllerClass } from './controller';
 
-declare module 'hapi' {
+declare module '@hapi/hapi' {
   export interface Server {
     resources: () => ResourceRouter;
   }

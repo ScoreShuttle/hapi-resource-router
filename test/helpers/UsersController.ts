@@ -1,5 +1,5 @@
-import Hapi from 'hapi';
-import Joi from 'joi';
+import Hapi from '@hapi/hapi';
+import Joi from '@hapi/joi';
 
 const users = [
   {

@@ -26,20 +26,19 @@
   },
   "homepage": "https://github.com/LibreTechnologyInc/hapi-resource-router#readme",
   "dependencies": {
-    "hoek": "6.x.x",
-    "joi": "14.x.x"
+    "@hapi/hoek": "8.x.x",
+    "@hapi/joi": "15.x.x"
   },
   "devDependencies": {
-    "@types/code": "^4.0.4",
-    "@types/hapi": "^17.6.3",
-    "code": "5.x.x",
-    "hapi": "17.x.x",
-    "lab": "17.x.x",
+    "@hapi/code": "5.x.x",
+    "@hapi/hapi": "18.x.x",
+    "@hapi/lab": "18.x.x",
+    "@types/hapi__hapi": "^18.2.5",
     "lab-transform-typescript": "^3.0.1",
-    "semantic-release": "^15.13.16",
+    "semantic-release": "^15.13.21",
     "ts-node": "^8.3.0",
-    "tslint": "^5.17.0",
+    "tslint": "^5.18.0",
     "tslint-config-airbnb": "^5.11.0",
-    "typescript": "^3.5.2"
+    "typescript": "^3.5.3"
   }
 }
