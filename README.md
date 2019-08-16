@@ -21,14 +21,14 @@ The API is available in the [API documentation](https://github.com/LibreTechnolo
 ### Server
 
 ```js
-const Hapi = require('hapi');
+const Hapi = require('@hapi/hapi');
 const HapiResourceRouter = require('hapi-resource-router');
 const resources = require('./resources');
 
 const server = new Hapi.Server();
 const start = async () => {
   await server.register({
-    plugin: HapiResourceRouter,
+    plugin: HapiResourceRouter.default,
     options: {
       basePath: '/v1'
     }
@@ -63,7 +63,7 @@ module.exports = (routes) => {
 ### Controller
 
 ```js
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 
 const users = [
   {
