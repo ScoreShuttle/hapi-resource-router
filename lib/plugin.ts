@@ -217,6 +217,7 @@ class Internals {
           payload: route.payload,
           validate: this.buildValidate(route, controller),
           plugins: {
+            ...route.plugins,
             resourceRouter: {
               controller,
             },
