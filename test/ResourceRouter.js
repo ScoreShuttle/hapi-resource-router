@@ -1,10 +1,13 @@
 const { expect } = require('@hapi/code');
 const Lab = require('@hapi/lab');
-const lab = exports.lab = Lab.script();
-const { describe, it, before } = lab;
-const Joi =  require('@hapi/joi');
+
+const lab = Lab.script();
+const { describe, it } = lab;
+const Joi = require('@hapi/joi');
 
 const { ResourceRouter } = require('../lib');
+
+exports.lab = lab;
 
 describe('ResourceRouter', () => {
   it('builds routes', () => {
@@ -35,9 +38,9 @@ describe('ResourceRouter', () => {
         });
       });
     });
-    const routes = router.routes;
+    const { routes } = router;
     // console.log('routes', routes);
-    expect(routes['home'].route.action).to.equal('getHome');
+    expect(routes.home.route.action).to.equal('getHome');
 
     expect(routes['users[user].show'].route.controller.show({}, {})).to.equal('yes');
     expect(routes['users[user].update'].route.controller.show({}, {})).to.equal('no');

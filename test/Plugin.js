@@ -1,53 +1,54 @@
 const { expect } = require('@hapi/code');
 const Lab = require('@hapi/lab');
-const lab = exports.lab = Lab.script();
+
+const lab = Lab.script();
 const { describe, it, before } = lab;
 const Hapi = require('@hapi/hapi');
-const Joi =  require('@hapi/joi');
+const Joi = require('@hapi/joi');
 const Boom = require('@hapi/boom');
 
 const Plugin = require('../lib').default;
 const resources = require('./helpers/resources').default;
 
-const isValidationError = (err) => {
-  return err.isJoi && err.name === 'ValidationError';
-}
+exports.lab = lab;
+
+const isValidationError = (err) => err.isJoi && err.name === 'ValidationError';
 
 class Controller {
   constructor(res, action = 'submit') {
-    this[action] = (request) => {
-      return res;
-    };
+    this[action] = () => res;
   }
 }
 
 describe('Plugin', () => {
   it('registers', async () => {
-
     const server = new Hapi.Server();
-    await server.register({ plugin: Plugin, options: {
-      basePath: '/api'
-    } });
+    await server.register({
+      plugin: Plugin,
+      options: {
+        basePath: '/api',
+      },
+    });
     server.resources().add(resources);
     await server.start();
 
     const response = await server.inject({
       method: 'GET',
-      url: '/api'
+      url: '/api',
     });
     expect(JSON.parse(response.payload)).to.equal({
-      hello: 'world'
+      hello: 'world',
     });
 
     const response2 = await server.inject({
       method: 'GET',
-      url: '/api/banana'
+      url: '/api/banana',
     });
     expect(response2.payload).to.equal('banana!');
 
     const response3 = await server.inject({
       method: 'DELETE',
-      url: '/api/users/1'
+      url: '/api/users/1',
     });
     const users = JSON.parse(response3.payload);
     const userIds = users.map(user => user.id);
@@ -70,7 +71,7 @@ describe('Plugin', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/submit',
-        payload: {}
+        payload: {},
       });
       expect(response.statusCode).to.equal(200);
       expect(response.payload).to.equal('hey!');
@@ -85,15 +86,15 @@ describe('Plugin', () => {
           validate: {
             async failAction(request, h, err) {
               if (isValidationError(err)) {
-                const badData =  Boom.badData('Validation error');
+                const badData = Boom.badData('Validation error');
                 badData.output.payload.details = err.details;
                 throw badData;
               } else {
                 throw Boom.badImplementation();
               }
-            }
-          }
-        }
+            },
+          },
+        },
       });
       await server.register({ plugin: Plugin, options: {} });
       server.resources().add((routes) => {
@@ -107,20 +108,20 @@ describe('Plugin', () => {
           validate: {
             payload: {
               submit: Joi.object({
-                banana: Joi.string().required().min(3)
+                banana: Joi.string().required().min(3),
               }),
-              square: {
-                banana: Joi.number().required().min(3)
-              }
-            }
-          }
+              square: Joi.object({
+                banana: Joi.number().required().min(10),
+              }),
+            },
+          },
         };
 
         routes.route('POST', 'submit');
         routes.route('POST', 'square', square => {
-          square.validate.payload = {
-            banana: Joi.number().required().max(0)
-          };
+          square.validate.payload = Joi.object({
+            banana: Joi.number().required().max(5),
+          });
         });
 
         routes.namespace('example', example => {
@@ -128,14 +129,17 @@ describe('Plugin', () => {
             constructor(field) {
               this.field = field;
             }
-            payload(action) {
+
+            payload() {
               return Joi.object({
-                [this.field]: Joi.string().required()
+                [this.field]: Joi.string().required(),
               });
             }
-            query(action) {
+
+            // eslint-disable-next-line class-methods-use-this
+            query() {
               return Joi.object({
-                refresh: Joi.boolean().optional().default(false)
+                refresh: Joi.boolean().optional().default(false),
               });
             }
           }
@@ -144,7 +148,7 @@ describe('Plugin', () => {
             act({ payload: { friend }, query: { refresh } }) {
               return { friend, refresh };
             },
-            validate: new V('friend')
+            validate: new V('friend'),
           };
           example.route('PUT', 'act');
         });
@@ -154,6 +158,7 @@ describe('Plugin', () => {
             constructor(val) {
               this.val = val;
             }
+
             index(request, h) {
               const result = this.val[request.query.q];
               if (!result) {
@@ -164,27 +169,27 @@ describe('Plugin', () => {
           }
           InstancesController.validate = {
             query: {
-              index: {
-                q: Joi.string().required()
-              }
-            }
+              index: Joi.object({
+                q: Joi.string().required(),
+              }),
+            },
           };
 
           instances.controller = new InstancesController({
-            banana: 'HI'
+            banana: 'HI',
           });
           instances.index();
         });
       });
 
       await server.start();
-    })
+    });
 
     it('fails when field not present', async () => {
       const notPresentResponse = await server.inject({
         method: 'POST',
         url: '/submit',
-        payload: {}
+        payload: {},
       });
       expect(notPresentResponse.statusCode).to.equal(422);
       const error = notPresentResponse.result.details[0];
@@ -197,8 +202,8 @@ describe('Plugin', () => {
         method: 'POST',
         url: '/submit',
         payload: {
-          banana: 'A'
-        }
+          banana: 'A',
+        },
       });
       expect(tooShortResponse.statusCode).to.equal(422);
     });
@@ -208,8 +213,8 @@ describe('Plugin', () => {
         method: 'POST',
         url: '/submit',
         payload: {
-          banana: 'yay!'
-        }
+          banana: 'yay!',
+        },
       });
       expect(justRightResponse.statusCode).to.equal(200);
       expect(justRightResponse.payload).to.equal('yay!');
@@ -221,22 +226,22 @@ describe('Plugin', () => {
         url: '/submit',
         payload: {
           banana: 'yay!',
-          notBanana: 'what'
-        }
+          notBanana: 'what',
+        },
       });
       expect(tooManyResponse.statusCode).to.equal(422);
     });
 
-    it('prefers the controller\'s validation over the route\'s', async () => {
+    it('prefers the route\'s validation over the controller\'s', async () => {
       const squareResponse = await server.inject({
         method: 'POST',
         url: '/square',
         payload: {
-          banana: 20
-        }
+          banana: 3,
+        },
       });
       expect(squareResponse.statusCode).to.equal(200);
-      expect(squareResponse.result).to.equal(400);
+      expect(squareResponse.result).to.equal(9);
     });
 
     it('retains the "this" on the validator functions', async () => {
@@ -244,13 +249,13 @@ describe('Plugin', () => {
         method: 'PUT',
         url: '/example/act?refresh=true',
         payload: {
-          friend: 'matt'
-        }
+          friend: 'matt',
+        },
       });
       expect(squareResponse.statusCode).to.equal(200);
       expect(squareResponse.result).to.equal({
         friend: 'matt',
-        refresh: true
+        refresh: true,
       });
     });
 
@@ -280,7 +285,7 @@ describe('Plugin', () => {
             home: new Controller('home!', 'home'),
             banana: new Controller('banana!', 'banana'),
           },
-        }
+        },
       });
       server.resources().add((routes) => {
         routes.route('GET', 'home', home => {
@@ -310,6 +315,7 @@ describe('Plugin', () => {
         constructor(numero) {
           this.numero = numero;
         }
+
         banana() {
           return { numero: this.numero };
         }

@@ -50,10 +50,13 @@ function isSubscription(route: Route): route is SubscriptionRoute {
 
 class Internals {
   options: PluginOptions;
+
   controllerMap?: ControllerMap;
+
   constructor(options: PluginOptions) {
     this.options = options;
   }
+
   resolveController(name: string, ...args: any[]) {
     if (!(this.controllerMap && this.controllerMap[name])) {
       throw new Error(`Missing controller ${name}`);
@@ -61,10 +64,12 @@ class Internals {
 
     const controller = this.controllerMap[name];
     if (typeof controller === 'function') {
-      return new controller(...args);
+      const ControllerSubclass = controller;
+      return new ControllerSubclass(...args);
     }
     return controller;
   }
+
   resolveControllerForRoute(route: Route) {
     if (Array.isArray(route.controller)) {
       return this.resolveController(route.controller[0], ...route.controller.slice(1));
@@ -74,7 +79,8 @@ class Internals {
     }
     return route.controller!;
   }
-  getHandler(route: Route, controller: Controller) {
+
+  static getHandler(route: Route, controller: Controller) {
     if (typeof route.action === 'string') {
       if (!(route.controller && controller[route.action])) {
         return null;
@@ -83,7 +89,8 @@ class Internals {
     }
     return route.action;
   }
-  getSubscriptionHandler(
+
+  static getSubscriptionHandler(
     route: SubscriptionRoute,
     controller: Controller,
     name: 'filter'|'onSubscribe'|'onUnsubscribe',
@@ -97,13 +104,14 @@ class Internals {
     }
     return config;
   }
-  resolveControllerValidator(
+
+  static resolveControllerValidator(
     route: Route,
     controller: Controller,
     key: 'params'|'query'|'response'|'payload',
   ) {
-    if (key === 'payload' && this.skipPayloadValidation(route)) {
-      return;
+    if (key === 'payload' && Internals.skipPayloadValidation(route)) {
+      return undefined;
     }
 
     // tslint:disable-next-line: max-line-length
@@ -113,11 +121,11 @@ class Internals {
     }
 
     if (typeof route.action !== 'string') {
-      return null;
+      return undefined;
     }
 
     if (!controller) {
-      return null;
+      return undefined;
     }
 
     let validator = controller.validate;
@@ -126,12 +134,12 @@ class Internals {
     }
 
     if (!validator) {
-      return null;
+      return undefined;
     }
 
     const validationEntry = validator[key];
     if (!validationEntry) {
-      return null;
+      return undefined;
     }
 
     let validate;
@@ -142,35 +150,38 @@ class Internals {
     }
     return validate;
   }
-  buildValidate(route: Route, controller: Controller) {
+
+  static buildValidate(route: Route, controller: Controller) {
     return {
-      params: this.resolveControllerValidator(
+      params: Internals.resolveControllerValidator(
         route,
         controller,
         'params',
       ),
-      query: this.resolveControllerValidator(
+      query: Internals.resolveControllerValidator(
         route,
         controller,
         'query',
       ),
-      response: this.resolveControllerValidator(
+      response: Internals.resolveControllerValidator(
         route,
         controller,
         'response',
       ),
-      payload: this.resolveControllerValidator(
+      payload: Internals.resolveControllerValidator(
         route,
         controller,
         'payload',
       ),
     };
   }
-  skipPayloadValidation(route: Route) {
+
+  static skipPayloadValidation(route: Route) {
     return skipPayloadValidationMethods.has(route.method);
   }
+
   async onPostStart(server: Hapi.Server) {
-    const routes = server.resources().routes;
+    const { routes } = server.resources();
 
     if (this.options.controllers) {
       if (typeof this.options.controllers === 'function') {
@@ -192,9 +203,9 @@ class Internals {
             path,
             {
               ...route.config,
-              filter: this.getSubscriptionHandler(route, controller, 'filter'),
-              onSubscribe: this.getSubscriptionHandler(route, controller, 'onSubscribe'),
-              onUnsubscribe: this.getSubscriptionHandler(route, controller, 'onUnsubscribe'),
+              filter: Internals.getSubscriptionHandler(route, controller, 'filter'),
+              onSubscribe: Internals.getSubscriptionHandler(route, controller, 'onSubscribe'),
+              onUnsubscribe: Internals.getSubscriptionHandler(route, controller, 'onUnsubscribe'),
             },
           );
         }
@@ -204,7 +215,7 @@ class Internals {
       server.route({
         path,
         method: route.method,
-        handler: this.getHandler(route, controller),
+        handler: Internals.getHandler(route, controller),
         options: {
           id: name,
           description: route.description,
@@ -213,7 +224,7 @@ class Internals {
           tags: route.tags.all(),
           pre: route.pre.all(),
           payload: route.payload,
-          validate: this.buildValidate(route, controller),
+          validate: Internals.buildValidate(route, controller),
           plugins: {
             ...route.plugins,
             resourceRouter: {

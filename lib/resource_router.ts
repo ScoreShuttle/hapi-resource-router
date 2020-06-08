@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import Hapi from '@hapi/hapi';
 import {
   JoiThing,
@@ -36,21 +37,26 @@ type ResourceNodeVisitor = (name: string, path: string, route: Route) => boolean
 
 class InheritedArray<T> {
   values: T[];
+
   parent?: InheritedArray<T>;
+
   constructor(parent?: InheritedArray<T>) {
     this.values = [];
     this.parent = parent;
   }
+
   clear() {
     this.values = [];
     this.parent = undefined;
   }
+
   all(): T[] {
     if (this.parent) {
       return [...this.parent.all(), ...this.values];
     }
     return this.values;
   }
+
   push(val: T) {
     this.values.push(val);
   }
@@ -60,10 +66,15 @@ type Tags = InheritedArray<string>;
 
 class ResourceNode {
   options: InheritableOptions;
+
   name: string;
+
   path: Path;
+
   pre: Prerequisites;
+
   tags: Tags;
+
   constructor(name: string, path: Path, parent?: ResourceNode) {
     this.name = name;
     this.path = path;
@@ -71,15 +82,19 @@ class ResourceNode {
     this.pre = new InheritedArray<Hapi.RouteOptionsPreAllOptions>(parent ? parent.pre : undefined);
     this.tags = new InheritedArray<string>(parent ? parent.tags : undefined);
   }
+
   get auth() {
     return this.options.auth;
   }
+
   set auth(val: false|string|Hapi.RouteOptionsAccess|undefined) {
     this.options.auth = val;
   }
+
   get controller() {
     return this.options.controller;
   }
+
   set controller(val: string|Controller|undefined) {
     this.options.controller = val;
   }
@@ -87,6 +102,7 @@ class ResourceNode {
   get bind() {
     return this.options.bind;
   }
+
   set bind(val: object|null|undefined) {
     this.options.bind = val;
   }
@@ -95,33 +111,25 @@ class ResourceNode {
     const validate = {};
 
     Object.defineProperty(validate, 'payload', {
-      get: () => {
-        return this.options.validatePayload;
-      },
+      get: () => this.options.validatePayload,
       set: (val) => {
         this.options.validatePayload = val;
       },
     });
     Object.defineProperty(validate, 'params', {
-      get: () => {
-        return this.options.validateParams;
-      },
+      get: () => this.options.validateParams,
       set: (val) => {
         this.options.validateParams = val;
       },
     });
     Object.defineProperty(validate, 'query', {
-      get: () => {
-        return this.options.validateQuery;
-      },
+      get: () => this.options.validateQuery,
       set: (val) => {
         this.options.validateQuery = val;
       },
     });
     Object.defineProperty(validate, 'response', {
-      get: () => {
-        return this.options.validateResponse;
-      },
+      get: () => this.options.validateResponse,
       set: (val) => {
         this.options.validateResponse = val;
       },
@@ -147,38 +155,57 @@ class ResourceNode {
     return path;
   }
 
-  visit(baseName: string, basePath: string, visitor: ResourceNodeVisitor): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, class-methods-use-this
+  visit(_baseName: string, _basePath: string, _visitor: ResourceNodeVisitor): boolean {
     return true;
   }
 }
 
 export class Route extends ResourceNode {
   method: Method;
+
   action: string|Hapi.Lifecycle.Method;
+
   description?: string;
+
   notes?: string|string[];
+
   app?: Hapi.RouteOptionsApp;
+
   cache?: false|Hapi.RouteOptionsCache;
+
   compression?: Hapi.Util.Dictionary<Hapi.RouteCompressionEncoderSettings>;
+
   cors?: boolean|Hapi.RouteOptionsCors;
+
   files?: {
     relativeTo: string;
   };
+
   json?: Hapi.Json.StringifyArguments;
+
   jsonp?: string;
+
   log?: object;
+
   payload?: Hapi.RouteOptionsPayload;
+
   plugins?: Hapi.PluginSpecificConfiguration;
+
   response?: Hapi.RouteOptionsResponse;
+
   security?: Hapi.RouteOptionsSecure;
+
   state?: {
     parse?: boolean;
     failAction?: Hapi.Lifecycle.FailAction;
   };
+
   timeout?: {
     server?: boolean | number;
     socket?: boolean | number;
   };
+
   constructor(method: Method, name: string, path: Path, parent?: ResourceNode) {
     super(name, path, parent);
     this.method = method;
@@ -199,6 +226,7 @@ export interface SubscriptionConfig {
 
 export class SubscriptionRoute extends Route {
   config: SubscriptionConfig;
+
   constructor(name: string, config: SubscriptionConfig, parent?: ResourceNode) {
     super('SUBSCRIPTION', name, ROOT, parent);
     this.config = config;
@@ -207,6 +235,7 @@ export class SubscriptionRoute extends Route {
 
 export class Resource extends ResourceNode {
   children: ResourceChildren;
+
   constructor(name: string, path: Path, parent?: ResourceNode) {
     super(name, path, parent);
     this.children = new Map<string, ResourceNode>();
@@ -300,12 +329,15 @@ export class Resource extends ResourceNode {
   create(routeBuilder?: RouteBuilder) {
     return this.rootRoute('POST', 'create', routeBuilder);
   }
+
   update(routeBuilder?: RouteBuilder) {
     return this.rootRoute('PUT', 'update', routeBuilder);
   }
+
   patch(routeBuilder?: RouteBuilder) {
     return this.rootRoute('PATCH', 'patch', routeBuilder);
   }
+
   destroy(routeBuilder?: RouteBuilder) {
     return this.rootRoute('DELETE', 'destroy', routeBuilder);
   }
@@ -396,9 +428,11 @@ export class Resource extends ResourceNode {
 
 export class CollectionResource extends Resource {
   itemsResource?: CollectionItemResource;
+
   index(routeBuilder?: RouteBuilder) {
     return this.rootRoute('GET', 'index', routeBuilder);
   }
+
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
       this.itemsResource = new CollectionItemResource(name, ROOT, this);
@@ -406,12 +440,14 @@ export class CollectionResource extends Resource {
     builder(this.itemsResource);
     return this.itemsResource;
   }
+
   group(name: string, builder: ResourceBuilder<CollectionGroupResource>): CollectionGroupResource {
     const resource = new CollectionGroupResource(name, this);
     builder(resource);
     this.addChild(resource.name, resource);
     return resource;
   }
+
   visit(baseName: string, basePath: string, visitor: ResourceNodeVisitor): boolean {
     if (!super.visit(baseName, basePath, visitor)) {
       return false;
@@ -432,6 +468,7 @@ export class ItemResource extends Resource {
   show(routeBuilder?: RouteBuilder) {
     return this.rootRoute('GET', 'show', routeBuilder);
   }
+
   group(name: string, builder: ResourceBuilder<ItemGroupResource>): ItemGroupResource {
     const resource = new ItemGroupResource(name, this);
     builder(resource);
@@ -451,10 +488,12 @@ export class GroupResource extends Resource {
     super(name, ROOT, parent);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   joinName(baseName: string) {
     return baseName;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   joinPath(basePath: string) {
     return basePath;
   }
@@ -462,9 +501,11 @@ export class GroupResource extends Resource {
 
 export class CollectionGroupResource extends GroupResource {
   itemsResource?: CollectionItemResource;
+
   index(routeBuilder?: RouteBuilder) {
     return this.rootRoute('GET', 'index', routeBuilder);
   }
+
   items(name: string, builder: ResourceBuilder<ItemResource>) {
     if (!this.itemsResource) {
       this.itemsResource = new CollectionItemResource(name, ROOT, this);
@@ -472,6 +513,7 @@ export class CollectionGroupResource extends GroupResource {
     builder(this.itemsResource);
     return this.itemsResource;
   }
+
   visit(baseName: string, basePath: string, visitor: ResourceNodeVisitor): boolean {
     if (!super.visit(baseName, basePath, visitor)) {
       return false;
@@ -508,24 +550,29 @@ type ResourceRouterRoutes = {
 
 class ResourceRouter extends Resource {
   routerOptions: ResourceRouterOptions;
+
   routes: ResourceRouterRoutes;
+
   constructor(mapOptions: ResourceRouterOptions) {
     super('ROUTER', ROOT);
     this.routerOptions = mapOptions;
     this.routes = {};
   }
+
   add(builder: ResourceBuilder<ResourceRouter>) {
     builder(this);
     this.build();
     return this;
   }
+
   get(name: string) {
     return this.routes[name];
   }
+
   href(name: string, params: { [key: string]: any }, options: Partial<ResourceRouterOptions> = {}) {
     const baseUrl = ('baseUrl' in options) ? options.baseUrl : this.routerOptions.baseUrl;
     const route = this.get(name);
-    let path = route.path.replace(/\{(\w+)\}/g, (match, param) => {
+    let path = route.path.replace(/\{(\w+)\}/g, (_match, param) => {
       const result = params[param];
       if (!result) {
         throw new Error(`Route.href: Unmatched route parameter="${param}", route="${name}"`);
@@ -543,6 +590,7 @@ class ResourceRouter extends Resource {
     }
     return path;
   }
+
   build() {
     this.routes = {};
     this.visit('', this.routerOptions.basePath || '/', (canonicalName, path, route) => {

@@ -5,17 +5,17 @@ const users = [
   {
     id: 1,
     first_name: 'Arthas',
-    last_name: 'Menethil'
+    last_name: 'Menethil',
   },
   {
     id: 2,
     first_name: 'Jaina',
-    last_name: 'Proudmoore'
+    last_name: 'Proudmoore',
   },
   {
     id: 3,
     first_name: 'Thrall',
-    last_name: 'Son of Durotan'
+    last_name: 'Son of Durotan',
   },
 ];
 
@@ -24,24 +24,26 @@ const UsersController = {
     first_name: Joi.string(),
     last_name: Joi.string(),
   }),
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async index(request: Hapi.Request, h: Hapi.ResponseToolkit) {
     return users;
   },
   async show(request: Hapi.Request, h: Hapi.ResponseToolkit) {
     const {
       params: {
-        user: userId
-      }
+        user: userId,
+      },
     } = request;
-    const user = users.find(user => String(user.id) === userId);
+    const user = users.find(u => String(u.id) === userId);
     if (!user) {
       return h.response().code(404);
     }
     return user;
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async create(request: Hapi.Request, h: Hapi.ResponseToolkit) {
     const {
-      payload
+      payload,
     } = request;
     const user = { ...(payload as object), id: 4 };
     return user;
@@ -49,11 +51,11 @@ const UsersController = {
   async update(request: Hapi.Request, h: Hapi.ResponseToolkit) {
     const {
       params: {
-        user: userId
+        user: userId,
       },
-      payload
+      payload,
     } = request;
-    const user = users.find(user => String(user.id) === userId);
+    const user = users.find(u => String(u.id) === userId);
     if (!user) {
       return h.response().code(404);
     }
@@ -63,14 +65,14 @@ const UsersController = {
   async destroy(request: Hapi.Request, h: Hapi.ResponseToolkit) {
     const {
       params: {
-        user: userId
-      }
+        user: userId,
+      },
     } = request;
-    const user = users.find(user => String(user.id) === userId);
+    const user = users.find(u => String(u.id) === userId);
     if (!user) {
       return h.response().code(404);
     }
-    return users.filter(user => String(user.id) !== userId);
+    return users.filter(u => String(u.id) !== userId);
   },
 };
 

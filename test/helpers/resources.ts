@@ -3,8 +3,6 @@ import { ResourceRouter } from '../../lib';
 import HomeController from './HomeController';
 import UsersController from './UsersController';
 
-// tslint:disable: ter-arrow-parens
-
 export default (routes: ResourceRouter) => {
   routes.controller = HomeController;
   routes.rootRoute('GET', 'home');
@@ -23,7 +21,7 @@ export default (routes: ResourceRouter) => {
       user.group('admin', admin => {
         admin.update();
         admin.destroy(destroy => {
-          destroy.validate.payload = null;
+          destroy.validate.payload = undefined;
         });
       });
     });
