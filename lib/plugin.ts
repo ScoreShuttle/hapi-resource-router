@@ -101,18 +101,23 @@ class Internals {
     route: Route,
     controller: Controller,
     key: 'params'|'query'|'response'|'payload',
-    fallback?: any,
   ) {
     if (key === 'payload' && this.skipPayloadValidation(route)) {
       return;
     }
 
+    // tslint:disable-next-line: max-line-length
+    const validateKey = `validate${key.substring(0, 1).toUpperCase()}${key.substring(1)}` as keyof Route['options'];
+    if (route.options[validateKey]) {
+      return route.options[validateKey];
+    }
+
     if (typeof route.action !== 'string') {
-      return fallback;
+      return null;
     }
 
     if (!controller) {
-      return fallback;
+      return null;
     }
 
     let validator = controller.validate;
@@ -121,12 +126,12 @@ class Internals {
     }
 
     if (!validator) {
-      return fallback;
+      return null;
     }
 
     const validationEntry = validator[key];
     if (!validationEntry) {
-      return fallback;
+      return null;
     }
 
     let validate;
@@ -135,10 +140,7 @@ class Internals {
     } else {
       validate = validationEntry[route.action];
     }
-    if (validate) {
-      return validate;
-    }
-    return fallback;
+    return validate;
   }
   buildValidate(route: Route, controller: Controller) {
     return {
@@ -146,25 +148,21 @@ class Internals {
         route,
         controller,
         'params',
-        route.options.validateParams,
       ),
       query: this.resolveControllerValidator(
         route,
         controller,
         'query',
-        route.options.validateQuery,
       ),
       response: this.resolveControllerValidator(
         route,
         controller,
         'response',
-        route.options.validateResponse,
       ),
       payload: this.resolveControllerValidator(
         route,
         controller,
         'payload',
-        route.options.validatePayload,
       ),
     };
   }
