@@ -100,7 +100,7 @@ class Internals {
       if (!(route.controller && controller[config])) {
         return undefined;
       }
-      return controller[config];
+      return controller[config].bind(controller);
     }
     return config;
   }
