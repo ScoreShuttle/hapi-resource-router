@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/LibreTechnologyInc/hapi-resource-router.git"
+    "url": "https://github.com/ScoreShuttle/hapi-resource-router.git"
   },
   "keywords": [
     "hapi",
@@ -22,9 +22,9 @@
   "author": "Chris Serino <themindoverall@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/LibreTechnologyInc/hapi-resource-router/issues"
+    "url": "https://github.com/ScoreShuttle/hapi-resource-router/issues"
   },
-  "homepage": "https://github.com/LibreTechnologyInc/hapi-resource-router#readme",
+  "homepage": "https://github.com/ScoreShuttle/hapi-resource-router#readme",
   "dependencies": {
     "@hapi/hoek": "9.x.x",
     "@hapi/joi": "15.x.x"
