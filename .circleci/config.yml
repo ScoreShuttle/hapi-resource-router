@@ -7,16 +7,16 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "package.json" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+            - node_modules-2-{{ checksum "package.json" }}-{{ checksum "package-lock.json"}}
+            - node_modules-2-{{ checksum "package.json" }}
+            - node_modules-2-
       - run:
           name: install
-          command: npm install
+          command: npm ci
       - save_cache:
           paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+            - $HOME/.npm
+          key: node_modules-2-{{ checksum "package.json" }}-{{ checksum "package-lock.json"}}
       - run:
           name: test
           command: npm test
