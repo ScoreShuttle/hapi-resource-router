@@ -36,7 +36,7 @@
     "hapi": "17.x.x",
     "lab": "17.x.x",
     "lab-transform-typescript": "^3.0.1",
-    "semantic-release": "^15.13.16",
+    "semantic-release": "^17.3.8",
     "ts-node": "^8.3.0",
     "tslint": "^5.17.0",
     "tslint-config-airbnb": "^5.11.0",

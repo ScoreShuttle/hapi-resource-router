@@ -107,6 +107,11 @@ class Internals {
       return;
     }
 
+    const validateKey = `validate${key.substring(0, 1).toUpperCase()}${key.substring(1)}` as keyof Route['options'];
+    if (route.options[validateKey]) {
+      return route.options[validateKey];
+    }
+
     if (typeof route.action !== 'string') {
       return fallback;
     }
@@ -171,7 +176,7 @@ class Internals {
   skipPayloadValidation(route: Route) {
     return skipPayloadValidationMethods.has(route.method);
   }
-  async onPostStart(server: Hapi.Server) {
+  async bindRoutes(server: Hapi.Server) {
     const routes = server.resources().routes;
 
     if (this.options.controllers) {
@@ -225,6 +230,9 @@ class Internals {
       });
     }
   }
+  async onPreStart(server: Hapi.Server) {
+    return this.bindRoutes(server);
+  }
 }
 
 const plugin: Hapi.Plugin<PluginOptions> = {
@@ -233,10 +241,11 @@ const plugin: Hapi.Plugin<PluginOptions> = {
     const router = new ResourceRouter(options);
     server.decorate('server', 'resources', () => router);
     server.expose('resolveController', internals.resolveController.bind(internals));
+    server.expose('bindRoutes', internals.bindRoutes.bind(internals));
 
     server.ext({
-      type: 'onPostStart',
-      method: internals.onPostStart.bind(internals),
+      type: 'onPreStart',
+      method: internals.onPreStart.bind(internals),
     });
   },
   pkg: {

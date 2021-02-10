@@ -227,7 +227,7 @@ describe('Plugin', () => {
       expect(tooManyResponse.statusCode).to.equal(422);
     });
 
-    it('prefers the controller\'s validation over the route\'s', async () => {
+    it('prefers the route\'s validation over the controller\'s ', async () => {
       const squareResponse = await server.inject({
         method: 'POST',
         url: '/square',
@@ -235,8 +235,7 @@ describe('Plugin', () => {
           banana: 20
         }
       });
-      expect(squareResponse.statusCode).to.equal(200);
-      expect(squareResponse.result).to.equal(400);
+      expect(squareResponse.statusCode).to.equal(422);
     });
 
     it('retains the "this" on the validator functions', async () => {
