@@ -42,5 +42,8 @@
     "tslint": "^5.17.0",
     "tslint-config-airbnb": "^5.11.0",
     "typescript": "^3.5.2"
+  },
+  "release": {
+    "branches": ["master", "v1"]
   }
 }
